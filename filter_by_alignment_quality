@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+use v5.10;
+use strict;
+use warnings;
+use autodie;
+
+use File::Copy qw(move);
+#use Data::Show;
+
+my $DEBUG = 0;
+
+MAIN(@ARGV);
+
+sub MAIN {
+
+    my $in_file_name       = shift // die 'Filename and number of taxa required';
+    my $max_fraction_gaps  = shift // die 'Maximum fraction gaps';
+    my $out_dir            = shift // 'AlignmentsFilteredByQuality';
+    
+    open(my $fh, '<', $in_file_name);
+    
+    system("mkdir -p $out_dir");
+    
+    my $total_gaps;
+    my $total_not_gaps;
+
+    while (my $line = readline $fh) {
+
+        next if substr($line,0,1) eq '>';
+
+        # remove newline
+        chomp $line;
+
+        my $num_gaps = count_gaps_in($line);
+
+        my $length   = length($line);
+
+        my $num_not_gaps = $length - $num_gaps;
+   
+        $total_gaps     += $num_gaps;
+        $total_not_gaps += $num_not_gaps;
+    }
+
+    close($fh);
+
+    my $fraction_gaps = $total_gaps/($total_gaps + $total_not_gaps);
+
+    if ($fraction_gaps >= $max_fraction_gaps ) {
+        warn "Not moving '$in_file_name' to '$out_dir' because it is $fraction_gaps gaps (i.e. >= maximum of $max_fraction_gaps)\n";
+    }
+    else {
+        warn "Moving '$in_file_name' to '$out_dir' because it is $fraction_gaps gaps (i.e. <= maximum of $max_fraction_gaps)\n";
+        move($in_file_name, $out_dir); 
+    }
+
+}
+
+sub count_gaps_in {
+    my $string = shift;
+
+    my $num_gaps = () = $string =~ /[-]/g;
+
+    return $num_gaps;
+}
