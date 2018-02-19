@@ -58,7 +58,7 @@ sub MAIN {
 sub count_gaps_in {
     my $string = shift;
 
-    my $num_gaps = () = $string =~ /[-]/g;
+    my $num_gaps = $string =~ tr/-//;
 
     return $num_gaps;
 }
